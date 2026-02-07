@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:wanderlog/data/payment_gateway_service.dart';
 import 'package:wanderlog/domain/models.dart';
 import 'package:wanderlog/theme.dart';
@@ -16,8 +17,7 @@ class AlertsPage extends StatefulWidget {
 }
 
 class _AlertsPageState extends State<AlertsPage> {
-  final PaymentGatewayService _service = PaymentGatewayService();
-
+  late PaymentGatewayService _service;
   bool _loading = true;
   String? _error;
   List<Alert> _alerts = const [];
@@ -26,6 +26,7 @@ class _AlertsPageState extends State<AlertsPage> {
   @override
   void initState() {
     super.initState();
+    _service = context.read<PaymentGatewayService>();
     _load();
   }
 
@@ -76,7 +77,9 @@ class _AlertsPageState extends State<AlertsPage> {
       await _load();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('All alerts marked as read'), backgroundColor: AppColors.success),
+        SnackBar(
+            content: const Text('All alerts marked as read'),
+            backgroundColor: AppColors.success),
       );
     } catch (e) {
       debugPrint('Mark all read failed: $e');
@@ -103,7 +106,9 @@ class _AlertsPageState extends State<AlertsPage> {
           if (_unreadCount > 0)
             TextButton(
               onPressed: _loading ? null : _markAllRead,
-              child: Text('Mark all read', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w700)),
+              child: Text('Mark all read',
+                  style: TextStyle(
+                      color: cs.primary, fontWeight: FontWeight.w700)),
             ),
           IconButton(
             tooltip: 'Refresh',
@@ -118,9 +123,15 @@ class _AlertsPageState extends State<AlertsPage> {
           child: ListView(
             padding: AppSpacing.paddingMd,
             children: [
-              _AlertsHeader(unreadCount: _unreadCount, filter: _filter, onFilterChanged: (v) => setState(() => _filter = v)),
+              _AlertsHeader(
+                  unreadCount: _unreadCount,
+                  filter: _filter,
+                  onFilterChanged: (v) => setState(() => _filter = v)),
               const SizedBox(height: AppSpacing.lg),
-              if (_loading) const SizedBox(height: 240, child: AppLoadingState(label: 'Loading alerts…')),
+              if (_loading)
+                const SizedBox(
+                    height: 240,
+                    child: AppLoadingState(label: 'Loading alerts…')),
               if (!_loading && _error != null)
                 AppEmptyState(
                   title: 'Couldn\'t load alerts',
@@ -132,7 +143,9 @@ class _AlertsPageState extends State<AlertsPage> {
               if (!_loading && _error == null)
                 if (_filtered.isEmpty)
                   AppEmptyState(
-                    title: _filter == AlertsFilter.unread ? 'You\'re all caught up' : 'No alerts',
+                    title: _filter == AlertsFilter.unread
+                        ? 'You\'re all caught up'
+                        : 'No alerts',
                     message: _filter == AlertsFilter.unread
                         ? 'Nothing new right now. We\'ll notify you when something needs attention.'
                         : 'Alerts about payouts, risk, and system events will appear here.',
@@ -151,12 +164,15 @@ class _AlertsPageState extends State<AlertsPage> {
                           decoration: BoxDecoration(
                             color: AppColors.error.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(AppRadius.md),
-                            border: Border.all(color: AppColors.error.withValues(alpha: 0.22)),
+                            border: Border.all(
+                                color: AppColors.error.withValues(alpha: 0.22)),
                           ),
-                          child: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                          child: const Icon(Icons.delete_outline_rounded,
+                              color: AppColors.error),
                         ),
                         onDismissed: (_) => _delete(a),
-                        child: _AlertCard(alert: a, onTap: () => _toggleRead(a)),
+                        child:
+                            _AlertCard(alert: a, onTap: () => _toggleRead(a)),
                       ),
                     ),
                   ),
@@ -170,7 +186,10 @@ class _AlertsPageState extends State<AlertsPage> {
 }
 
 class _AlertsHeader extends StatelessWidget {
-  const _AlertsHeader({required this.unreadCount, required this.filter, required this.onFilterChanged});
+  const _AlertsHeader(
+      {required this.unreadCount,
+      required this.filter,
+      required this.onFilterChanged});
 
   final int unreadCount;
   final AlertsFilter filter;
@@ -200,7 +219,8 @@ class _AlertsHeader extends StatelessWidget {
               children: [
                 Text('Inbox', style: context.textStyles.titleLarge),
                 const SizedBox(height: 4),
-                Text('$unreadCount unread', style: context.textStyles.bodySmall),
+                Text('$unreadCount unread',
+                    style: context.textStyles.bodySmall),
               ],
             ),
           ),
@@ -216,8 +236,10 @@ class _AlertsHeader extends StatelessWidget {
             ],
             showSelectedIcon: false,
             style: ButtonStyle(
-              padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-              shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+              padding: WidgetStateProperty.all(
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
+              shape: WidgetStateProperty.all(RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999))),
             ),
           ),
         ],
@@ -238,7 +260,10 @@ class _AlertCard extends StatelessWidget {
     final time = DateFormat('MMM d, h:mm a').format(alert.timestamp);
 
     final bg = alert.isRead ? cs.surface : cs.primary.withValues(alpha: 0.06);
-    final border = alert.isRead ? (Theme.of(context).dividerTheme.color?.withValues(alpha: 0.55) ?? Colors.transparent) : cs.primary.withValues(alpha: 0.16);
+    final border = alert.isRead
+        ? (Theme.of(context).dividerTheme.color?.withValues(alpha: 0.55) ??
+            Colors.transparent)
+        : cs.primary.withValues(alpha: 0.16);
 
     return InkWell(
       onTap: onTap,
@@ -261,7 +286,8 @@ class _AlertCard extends StatelessWidget {
                   color: cs.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Icon(_iconFor(alert.severity), color: _colorFor(alert.severity)),
+                child: Icon(_iconFor(alert.severity),
+                    color: _colorFor(alert.severity)),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -270,7 +296,10 @@ class _AlertCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text(alert.title, style: context.textStyles.titleSmall?.semiBold)),
+                        Expanded(
+                            child: Text(alert.title,
+                                style:
+                                    context.textStyles.titleSmall?.semiBold)),
                         const SizedBox(width: AppSpacing.sm),
                         SeverityPill(severity: alert.severity),
                       ],
@@ -280,14 +309,18 @@ class _AlertCard extends StatelessWidget {
                     const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
-                        Icon(Icons.schedule_rounded, size: 16, color: cs.onSurface.withValues(alpha: 0.6)),
+                        Icon(Icons.schedule_rounded,
+                            size: 16,
+                            color: cs.onSurface.withValues(alpha: 0.6)),
                         const SizedBox(width: 6),
                         Text(time, style: context.textStyles.bodySmall),
                         const Spacer(),
                         Text(
                           alert.isRead ? 'Read' : 'Unread',
                           style: context.textStyles.labelSmall?.copyWith(
-                            color: alert.isRead ? cs.onSurface.withValues(alpha: 0.55) : cs.primary,
+                            color: alert.isRead
+                                ? cs.onSurface.withValues(alpha: 0.55)
+                                : cs.primary,
                             fontWeight: FontWeight.w800,
                           ),
                         ),

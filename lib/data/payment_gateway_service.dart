@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:wanderlog/data/database_service.dart';
 import 'package:wanderlog/data/mock_service.dart';
 import 'package:wanderlog/data/payment_gateway_api.dart';
 import 'package:wanderlog/domain/models.dart';
@@ -8,12 +9,17 @@ import 'package:wanderlog/domain/models.dart';
 /// and falls back to [MockService] to keep the UI functional in Dreamflow
 /// when no backend is connected.
 class PaymentGatewayService {
-  PaymentGatewayService({PaymentGatewayApi? api, MockService? fallback})
-      : _api = api ?? PaymentGatewayApi(),
-        _fallback = fallback ?? MockService();
+  PaymentGatewayService({
+    PaymentGatewayApi? api,
+    MockService? fallback,
+    DatabaseService? database,
+  })  : _api = api ?? PaymentGatewayApi(),
+        _fallback = fallback ?? MockService(),
+        _database = database ?? DatabaseService();
 
   final PaymentGatewayApi _api;
   final MockService _fallback;
+  final DatabaseService _database;
 
   bool get isConfigured => _api.isConfigured;
 
@@ -27,17 +33,53 @@ class PaymentGatewayService {
       final data = await _api.getJson('/api/v1/payments/balance/available');
 
       final currency = (data['currency'] ?? data['code'] ?? 'USD').toString();
-      final available = _readNum(data['available'] ?? data['balance'] ?? data['availableBalance']) ?? 0;
+      final available = _readNum(data['available'] ??
+              data['balance'] ??
+              data['availableBalance']) ??
+          0;
       final pending = _readNum(data['pending'] ?? data['pendingBalance']) ?? 0;
 
-      return MerchantAccount(
+      final account = MerchantAccount(
         id: (data['tenantId'] ?? data['merchantId'] ?? 'merchant').toString(),
-        name: (data['tenantName'] ?? data['merchantName'] ?? 'Merchant').toString(),
+        name: (data['tenantName'] ?? data['merchantName'] ?? 'Merchant')
+            .toString(),
         currency: currency,
-        balance: Balance(available: available.toDouble(), pending: pending.toDouble()),
+        balance: Balance(
+            available: available.toDouble(), pending: pending.toDouble()),
       );
+      
+      // Cache the account in SQLite
+      await _database.saveMerchantAccount({
+        'id': account.id,
+        'name': account.name,
+        'currency': account.currency,
+        'availableBalance': account.balance.available,
+        'pendingBalance': account.balance.pending,
+        'lastUpdated': DateTime.now().toIso8601String(),
+      });
+
+      return account;
     } catch (e) {
       debugPrint('PaymentGatewayService.getMerchantAccount fallback: $e');
+      
+      // Try to load from cache
+      try {
+        final cached = await _database.getMerchantAccount('merchant');
+        if (cached != null) {
+          return MerchantAccount(
+            id: cached['id'] as String,
+            name: cached['name'] as String,
+            currency: cached['currency'] as String,
+            balance: Balance(
+              available: (cached['availableBalance'] as num).toDouble(),
+              pending: (cached['pendingBalance'] as num).toDouble(),
+            ),
+          );
+        }
+      } catch (cacheError) {
+        debugPrint('Failed to load cached merchant account: $cacheError');
+      }
+      
       return _fallback.getMerchantAccount();
     }
   }
@@ -54,11 +96,15 @@ class PaymentGatewayService {
         final m = raw.cast<String, dynamic>();
 
         final id = (m['id'] ?? m['_id'] ?? m['paymentId'] ?? '').toString();
-        final reference = (m['externalId'] ?? m['reference'] ?? m['ref'] ?? id).toString();
+        final reference =
+            (m['externalId'] ?? m['reference'] ?? m['ref'] ?? id).toString();
         final currency = (m['currency'] ?? 'USD').toString();
-        final amount = _readNum(m['amount'] ?? m['total'] ?? 0)?.toDouble() ?? 0.0;
-        final status = _parseStatus((m['status'] ?? m['state'] ?? '').toString());
-        final createdAt = _parseDate(m['createdAt'] ?? m['timestamp'] ?? m['date']);
+        final amount =
+            _readNum(m['amount'] ?? m['total'] ?? 0)?.toDouble() ?? 0.0;
+        final status =
+            _parseStatus((m['status'] ?? m['state'] ?? '').toString());
+        final createdAt =
+            _parseDate(m['createdAt'] ?? m['timestamp'] ?? m['date']);
 
         txs.add(
           Transaction(
@@ -69,7 +115,9 @@ class PaymentGatewayService {
             status: status,
             type: TransactionType.payment,
             timestamp: createdAt ?? DateTime.now(),
-            counterparty: (m['payer'] ?? m['customer'] ?? m['counterparty'] ?? 'Customer').toString(),
+            counterparty:
+                (m['payer'] ?? m['customer'] ?? m['counterparty'] ?? 'Customer')
+                    .toString(),
           ),
         );
       }
@@ -99,9 +147,17 @@ class PaymentGatewayService {
     return _fallback.deleteAlert(alertId);
   }
 
-  Future<Transaction> createPayout({required double amount, required String currency, required String destinationLabel, String? note}) async {
+  Future<Transaction> createPayout(
+      {required double amount,
+      required String currency,
+      required String destinationLabel,
+      String? note}) async {
     if (!_api.isConfigured) {
-      return _fallback.createPayout(amount: amount, currency: currency, destinationLabel: destinationLabel, note: note);
+      return _fallback.createPayout(
+          amount: amount,
+          currency: currency,
+          destinationLabel: destinationLabel,
+          note: note);
     }
 
     try {
@@ -119,10 +175,18 @@ class PaymentGatewayService {
 
       // If it succeeds but schema is unknown, reflect it immediately in UI
       // by creating a local pending payout entry.
-      return _fallback.createPayout(amount: amount, currency: currency, destinationLabel: destinationLabel, note: note);
+      return _fallback.createPayout(
+          amount: amount,
+          currency: currency,
+          destinationLabel: destinationLabel,
+          note: note);
     } catch (e) {
       debugPrint('PaymentGatewayService.createPayout fallback: $e');
-      return _fallback.createPayout(amount: amount, currency: currency, destinationLabel: destinationLabel, note: note);
+      return _fallback.createPayout(
+          amount: amount,
+          currency: currency,
+          destinationLabel: destinationLabel,
+          note: note);
     }
   }
 
@@ -143,9 +207,11 @@ class PaymentGatewayService {
     final v = raw.trim().toLowerCase();
     if (v.isEmpty) return TransactionStatus.completed;
     if (v.contains('pend')) return TransactionStatus.pending;
-    if (v.contains('fail') || v.contains('error')) return TransactionStatus.failed;
+    if (v.contains('fail') || v.contains('error'))
+      return TransactionStatus.failed;
     if (v.contains('refund')) return TransactionStatus.refunded;
-    if (v.contains('success') || v.contains('complete') || v.contains('paid')) return TransactionStatus.completed;
+    if (v.contains('success') || v.contains('complete') || v.contains('paid'))
+      return TransactionStatus.completed;
     return TransactionStatus.completed;
   }
 }

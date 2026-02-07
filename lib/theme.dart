@@ -62,7 +62,7 @@ class AppColors {
   static const lightTextPrimary = Color(0xFF1D3557);
   static const lightTextSecondary = Color(0xFF457B9D);
   static const lightBorder = Color(0xFFE0E7EA);
-  
+
   // Dark Mode Specifics
   static const darkBackground = Color(0xFF121212);
   static const darkSurface = Color(0xFF1E1E1E);
@@ -95,130 +95,132 @@ class FontSizes {
 }
 
 ThemeData get lightTheme => ThemeData(
-  useMaterial3: true,
-  brightness: Brightness.light,
-  scaffoldBackgroundColor: AppColors.lightBackground,
-  primaryColor: AppColors.primary,
-  colorScheme: const ColorScheme.light(
-    primary: AppColors.primary,
-    onPrimary: Colors.white,
-    secondary: AppColors.secondary,
-    onSecondary: Colors.white,
-    surface: AppColors.lightSurface,
-    onSurface: AppColors.lightTextPrimary,
-    error: AppColors.error,
-    onError: Colors.white,
-    outline: AppColors.lightBorder,
-  ),
-  appBarTheme: AppBarTheme(
-    backgroundColor: AppColors.lightBackground,
-    foregroundColor: AppColors.lightTextPrimary,
-    elevation: 0,
-    centerTitle: false,
-    titleTextStyle: GoogleFonts.outfit(
-      fontSize: FontSizes.headlineSmall,
-      fontWeight: FontWeight.w600,
-      color: AppColors.lightTextPrimary,
-    ),
-  ),
-  cardTheme: CardThemeData(
-    elevation: 0,
-    color: AppColors.lightSurface,
-    margin: EdgeInsets.zero,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      side: const BorderSide(color: Colors.transparent),
-    ),
-  ),
-  textTheme: _buildTextTheme(AppColors.lightTextPrimary, AppColors.lightTextSecondary),
-  iconTheme: const IconThemeData(
-    color: AppColors.secondary,
-    size: 24,
-  ),
-  elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.lightBackground,
+      primaryColor: AppColors.primary,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.primary,
+        onPrimary: Colors.white,
+        secondary: AppColors.secondary,
+        onSecondary: Colors.white,
+        surface: AppColors.lightSurface,
+        onSurface: AppColors.lightTextPrimary,
+        error: AppColors.error,
+        onError: Colors.white,
+        outline: AppColors.lightBorder,
       ),
-      textStyle: GoogleFonts.outfit(
-        fontSize: FontSizes.titleMedium,
-        fontWeight: FontWeight.w600,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.lightBackground,
+        foregroundColor: AppColors.lightTextPrimary,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: FontSizes.headlineSmall,
+          fontWeight: FontWeight.w600,
+          color: AppColors.lightTextPrimary,
+        ),
       ),
-    ),
-  ),
-  dividerTheme: const DividerThemeData(
-    color: AppColors.lightBorder,
-    thickness: 1,
-    space: 24,
-  ),
-);
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: AppColors.lightSurface,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: const BorderSide(color: Colors.transparent),
+        ),
+      ),
+      textTheme: _buildTextTheme(
+          AppColors.lightTextPrimary, AppColors.lightTextSecondary),
+      iconTheme: const IconThemeData(
+        color: AppColors.secondary,
+        size: 24,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          textStyle: GoogleFonts.outfit(
+            fontSize: FontSizes.titleMedium,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.lightBorder,
+        thickness: 1,
+        space: 24,
+      ),
+    );
 
 ThemeData get darkTheme => ThemeData(
-  useMaterial3: true,
-  brightness: Brightness.dark,
-  scaffoldBackgroundColor: AppColors.darkBackground,
-  primaryColor: AppColors.primary,
-  colorScheme: const ColorScheme.dark(
-    primary: AppColors.primary,
-    onPrimary: Colors.white,
-    secondary: AppColors.secondary,
-    onSecondary: Colors.white,
-    surface: AppColors.darkSurface,
-    onSurface: AppColors.darkTextPrimary,
-    error: AppColors.error,
-    onError: Colors.white,
-    outline: AppColors.darkBorder,
-  ),
-  appBarTheme: AppBarTheme(
-    backgroundColor: AppColors.darkBackground,
-    foregroundColor: AppColors.darkTextPrimary,
-    elevation: 0,
-    centerTitle: false,
-    titleTextStyle: GoogleFonts.outfit(
-      fontSize: FontSizes.headlineSmall,
-      fontWeight: FontWeight.w600,
-      color: AppColors.darkTextPrimary,
-    ),
-  ),
-  cardTheme: CardThemeData(
-    elevation: 0,
-    color: AppColors.darkSurface,
-    margin: EdgeInsets.zero,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      side: const BorderSide(color: AppColors.darkBorder),
-    ),
-  ),
-  textTheme: _buildTextTheme(AppColors.darkTextPrimary, AppColors.darkTextSecondary),
-  iconTheme: const IconThemeData(
-    color: AppColors.darkTextPrimary,
-    size: 24,
-  ),
-  elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: AppColors.darkBackground,
+      primaryColor: AppColors.primary,
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.primary,
+        onPrimary: Colors.white,
+        secondary: AppColors.secondary,
+        onSecondary: Colors.white,
+        surface: AppColors.darkSurface,
+        onSurface: AppColors.darkTextPrimary,
+        error: AppColors.error,
+        onError: Colors.white,
+        outline: AppColors.darkBorder,
       ),
-      textStyle: GoogleFonts.outfit(
-        fontSize: FontSizes.titleMedium,
-        fontWeight: FontWeight.w600,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.darkBackground,
+        foregroundColor: AppColors.darkTextPrimary,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: FontSizes.headlineSmall,
+          fontWeight: FontWeight.w600,
+          color: AppColors.darkTextPrimary,
+        ),
       ),
-    ),
-  ),
-  dividerTheme: const DividerThemeData(
-    color: AppColors.darkBorder,
-    thickness: 1,
-    space: 24,
-  ),
-);
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: AppColors.darkSurface,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: const BorderSide(color: AppColors.darkBorder),
+        ),
+      ),
+      textTheme: _buildTextTheme(
+          AppColors.darkTextPrimary, AppColors.darkTextSecondary),
+      iconTheme: const IconThemeData(
+        color: AppColors.darkTextPrimary,
+        size: 24,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          textStyle: GoogleFonts.outfit(
+            fontSize: FontSizes.titleMedium,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.darkBorder,
+        thickness: 1,
+        space: 24,
+      ),
+    );
 
 TextTheme _buildTextTheme(Color primaryColor, Color secondaryColor) {
   return TextTheme(
@@ -252,7 +254,8 @@ TextTheme _buildTextTheme(Color primaryColor, Color secondaryColor) {
       fontWeight: FontWeight.w500,
       color: primaryColor,
     ),
-    bodyLarge: GoogleFonts.dmSans( // Using DM Sans for body text for readability
+    bodyLarge: GoogleFonts.dmSans(
+      // Using DM Sans for body text for readability
       fontSize: FontSizes.bodyLarge,
       fontWeight: FontWeight.normal,
       color: primaryColor,

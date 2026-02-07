@@ -82,3 +82,40 @@ class Alert {
     required this.isRead,
   });
 }
+
+/// Represents an authenticated user in the domain layer
+class User {
+  final String id;
+  final String email;
+  final String username;
+  final String? tenantId;
+
+  User({
+    required this.id,
+    required this.email,
+    required this.username,
+    this.tenantId,
+  });
+}
+
+/// Represents an authentication token
+class AuthToken {
+  final String accessToken;
+  final String tokenType;
+
+  AuthToken({
+    required this.accessToken,
+    this.tokenType = 'Bearer',
+  });
+}
+
+/// Represents the result of authentication operations
+class AuthResult {
+  final User user;
+  final AuthToken token;
+
+  AuthResult({
+    required this.user,
+    required this.token,
+  });
+}

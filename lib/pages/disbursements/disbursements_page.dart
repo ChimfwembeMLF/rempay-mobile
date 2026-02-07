@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:wanderlog/data/payment_gateway_service.dart';
 import 'package:wanderlog/domain/models.dart';
 import 'package:wanderlog/nav.dart';
@@ -18,18 +19,17 @@ class DisbursementsPage extends StatefulWidget {
 }
 
 class _DisbursementsPageState extends State<DisbursementsPage> {
-  final PaymentGatewayService _service = PaymentGatewayService();
-
+  late PaymentGatewayService _service;
   MerchantAccount? _account;
   List<Transaction> _all = const [];
   bool _loading = true;
   String? _error;
-
   DisbursementFilter _filter = DisbursementFilter.all;
 
   @override
   void initState() {
     super.initState();
+    _service = context.read<PaymentGatewayService>();
     _load();
   }
 
@@ -58,9 +58,12 @@ class _DisbursementsPageState extends State<DisbursementsPage> {
   }
 
   List<Transaction> get _filtered {
-    final payouts = _all.where((t) => t.type == TransactionType.payout).toList();
-    final refunds = _all.where((t) => t.type == TransactionType.refund).toList();
-    final failed = _all.where((t) => t.status == TransactionStatus.failed).toList();
+    final payouts =
+        _all.where((t) => t.type == TransactionType.payout).toList();
+    final refunds =
+        _all.where((t) => t.type == TransactionType.refund).toList();
+    final failed =
+        _all.where((t) => t.status == TransactionStatus.failed).toList();
 
     return switch (_filter) {
       DisbursementFilter.all => _all,
@@ -82,7 +85,8 @@ class _DisbursementsPageState extends State<DisbursementsPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => CreatePayoutSheet(account: _account!, service: _service),
+      builder: (ctx) =>
+          CreatePayoutSheet(account: _account!, service: _service),
     );
 
     if (created != null) {
@@ -137,9 +141,14 @@ class _DisbursementsPageState extends State<DisbursementsPage> {
                 isConfigured: _service.isConfigured,
               ),
               const SizedBox(height: AppSpacing.lg),
-              _FilterBar(value: _filter, onChanged: (v) => setState(() => _filter = v)),
+              _FilterBar(
+                  value: _filter,
+                  onChanged: (v) => setState(() => _filter = v)),
               const SizedBox(height: AppSpacing.lg),
-              if (_loading) const SizedBox(height: 260, child: AppLoadingState(label: 'Loading activity…')),
+              if (_loading)
+                const SizedBox(
+                    height: 260,
+                    child: AppLoadingState(label: 'Loading activity…')),
               if (!_loading && _error != null)
                 AppEmptyState(
                   title: 'Couldn\'t load payouts',
@@ -213,18 +222,23 @@ class _SummaryHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Payouts', style: context.textStyles.titleLarge?.withColor(Colors.white)),
+              Text('Payouts',
+                  style:
+                      context.textStyles.titleLarge?.withColor(Colors.white)),
               const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.16)),
                 ),
                 child: Text(
                   isConfigured ? 'Gateway connected' : 'Mock data',
-                  style: context.textStyles.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                  style: context.textStyles.labelSmall?.copyWith(
+                      color: Colors.white, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -237,7 +251,8 @@ class _SummaryHeader extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Total payouts (all time)',
-            style: context.textStyles.bodyMedium?.withColor(Colors.white.withValues(alpha: 0.85)),
+            style: context.textStyles.bodyMedium
+                ?.withColor(Colors.white.withValues(alpha: 0.85)),
           ),
           const SizedBox(height: AppSpacing.lg),
           Wrap(
@@ -247,12 +262,16 @@ class _SummaryHeader extends StatelessWidget {
               _MetricPill(
                 icon: Icons.account_balance_wallet_outlined,
                 label: 'Available',
-                value: available == null ? '—' : CurrencyFormatter.format(available!, currency),
+                value: available == null
+                    ? '—'
+                    : CurrencyFormatter.format(available!, currency),
               ),
               _MetricPill(
                 icon: Icons.access_time_rounded,
                 label: 'Pending',
-                value: pending == null ? '—' : CurrencyFormatter.format(pending!, currency),
+                value: pending == null
+                    ? '—'
+                    : CurrencyFormatter.format(pending!, currency),
               ),
             ],
           ),
@@ -263,7 +282,8 @@ class _SummaryHeader extends StatelessWidget {
 }
 
 class _MetricPill extends StatelessWidget {
-  const _MetricPill({required this.icon, required this.label, required this.value});
+  const _MetricPill(
+      {required this.icon, required this.label, required this.value});
 
   final IconData icon;
   final String label;
@@ -286,9 +306,13 @@ class _MetricPill extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: context.textStyles.labelSmall?.copyWith(color: Colors.white.withValues(alpha: 0.80))),
+              Text(label,
+                  style: context.textStyles.labelSmall
+                      ?.copyWith(color: Colors.white.withValues(alpha: 0.80))),
               const SizedBox(height: 2),
-              Text(value, style: context.textStyles.titleSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+              Text(value,
+                  style: context.textStyles.titleSmall?.copyWith(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
             ],
           ),
         ],
@@ -314,17 +338,31 @@ class _FilterBar extends StatelessWidget {
             onChanged(s.first);
           },
           segments: const [
-            ButtonSegment(value: DisbursementFilter.all, label: Text('All'), icon: Icon(Icons.list_rounded)),
-            ButtonSegment(value: DisbursementFilter.payouts, label: Text('Payouts'), icon: Icon(Icons.arrow_upward_rounded)),
-            ButtonSegment(value: DisbursementFilter.refunds, label: Text('Refunds'), icon: Icon(Icons.undo_rounded)),
-            ButtonSegment(value: DisbursementFilter.failed, label: Text('Failed'), icon: Icon(Icons.error_outline_rounded)),
+            ButtonSegment(
+                value: DisbursementFilter.all,
+                label: Text('All'),
+                icon: Icon(Icons.list_rounded)),
+            ButtonSegment(
+                value: DisbursementFilter.payouts,
+                label: Text('Payouts'),
+                icon: Icon(Icons.arrow_upward_rounded)),
+            ButtonSegment(
+                value: DisbursementFilter.refunds,
+                label: Text('Refunds'),
+                icon: Icon(Icons.undo_rounded)),
+            ButtonSegment(
+                value: DisbursementFilter.failed,
+                label: Text('Failed'),
+                icon: Icon(Icons.error_outline_rounded)),
           ],
           showSelectedIcon: false,
           style: ButtonStyle(
             visualDensity: VisualDensity.standard,
-            padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
+            padding: WidgetStateProperty.all(
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
             shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+              RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.lg)),
             ),
           ),
         );
@@ -334,7 +372,8 @@ class _FilterBar extends StatelessWidget {
 }
 
 class CreatePayoutSheet extends StatefulWidget {
-  const CreatePayoutSheet({super.key, required this.account, required this.service});
+  const CreatePayoutSheet(
+      {super.key, required this.account, required this.service});
 
   final MerchantAccount account;
   final PaymentGatewayService service;
@@ -380,7 +419,9 @@ class _CreatePayoutSheetState extends State<CreatePayoutSheet> {
       debugPrint('Create payout failed: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Could not create payout'), backgroundColor: AppColors.error),
+        SnackBar(
+            content: const Text('Could not create payout'),
+            backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -414,7 +455,8 @@ class _CreatePayoutSheetState extends State<CreatePayoutSheet> {
                 children: [
                   Row(
                     children: [
-                      Text('New payout', style: context.textStyles.headlineSmall),
+                      Text('New payout',
+                          style: context.textStyles.headlineSmall),
                       const Spacer(),
                       IconButton(
                         onPressed: _submitting ? null : () => context.pop(),
@@ -430,19 +472,25 @@ class _CreatePayoutSheetState extends State<CreatePayoutSheet> {
                   const SizedBox(height: AppSpacing.lg),
                   TextFormField(
                     controller: _amountCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       labelText: 'Amount (${widget.account.currency})',
-                      prefixIcon: Icon(Icons.attach_money_rounded, color: cs.primary),
+                      prefixIcon:
+                          Icon(Icons.attach_money_rounded, color: cs.primary),
                       filled: true,
                       fillColor: cs.primary.withValues(alpha: 0.06),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.lg), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          borderSide: BorderSide.none),
                     ),
                     validator: (v) {
                       final s = (v ?? '').trim().replaceAll(',', '');
                       final amt = double.tryParse(s);
-                      if (amt == null || amt <= 0) return 'Enter a valid amount';
-                      if (amt > widget.account.balance.available) return 'Amount exceeds available balance';
+                      if (amt == null || amt <= 0)
+                        return 'Enter a valid amount';
+                      if (amt > widget.account.balance.available)
+                        return 'Amount exceeds available balance';
                       return null;
                     },
                   ),
@@ -451,12 +499,17 @@ class _CreatePayoutSheetState extends State<CreatePayoutSheet> {
                     controller: _destCtrl,
                     decoration: InputDecoration(
                       labelText: 'Destination',
-                      prefixIcon: Icon(Icons.account_balance_rounded, color: cs.primary),
+                      prefixIcon: Icon(Icons.account_balance_rounded,
+                          color: cs.primary),
                       filled: true,
                       fillColor: cs.primary.withValues(alpha: 0.06),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.lg), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          borderSide: BorderSide.none),
                     ),
-                    validator: (v) => (v ?? '').trim().isEmpty ? 'Destination required' : null,
+                    validator: (v) => (v ?? '').trim().isEmpty
+                        ? 'Destination required'
+                        : null,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   TextFormField(
@@ -464,10 +517,13 @@ class _CreatePayoutSheetState extends State<CreatePayoutSheet> {
                     maxLines: 2,
                     decoration: InputDecoration(
                       labelText: 'Note (optional)',
-                      prefixIcon: Icon(Icons.sticky_note_2_outlined, color: cs.primary),
+                      prefixIcon:
+                          Icon(Icons.sticky_note_2_outlined, color: cs.primary),
                       filled: true,
                       fillColor: cs.primary.withValues(alpha: 0.06),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.lg), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          borderSide: BorderSide.none),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
@@ -475,8 +531,10 @@ class _CreatePayoutSheetState extends State<CreatePayoutSheet> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: _submitting ? null : _submit,
-                      icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
-                      label: Text(_submitting ? 'Creating…' : 'Create payout', style: const TextStyle(color: Colors.white)),
+                      icon: const Icon(Icons.arrow_upward_rounded,
+                          color: Colors.white),
+                      label: Text(_submitting ? 'Creating…' : 'Create payout',
+                          style: const TextStyle(color: Colors.white)),
                     ),
                   ),
                 ],
@@ -501,7 +559,9 @@ class _TransactionDetailsSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(AppRadius.xl), topRight: Radius.circular(AppRadius.xl)),
+        borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(AppRadius.xl),
+            topRight: Radius.circular(AppRadius.xl)),
       ),
       child: SafeArea(
         top: false,
@@ -529,17 +589,22 @@ class _TransactionDetailsSheet extends StatelessWidget {
                   children: [
                     Text(tx.counterparty, style: context.textStyles.titleLarge),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('Reference: ${tx.reference}', style: context.textStyles.bodyMedium),
+                    Text('Reference: ${tx.reference}',
+                        style: context.textStyles.bodyMedium),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('Status: ${tx.status.name}', style: context.textStyles.bodyMedium),
+                    Text('Status: ${tx.status.name}',
+                        style: context.textStyles.bodyMedium),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('Type: ${tx.type.name}', style: context.textStyles.bodyMedium),
+                    Text('Type: ${tx.type.name}',
+                        style: context.textStyles.bodyMedium),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('When: ${tx.timestamp}', style: context.textStyles.bodyMedium),
+                    Text('When: ${tx.timestamp}',
+                        style: context.textStyles.bodyMedium),
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       CurrencyFormatter.format(tx.amount, tx.currency),
-                      style: context.textStyles.displaySmall?.copyWith(color: cs.primary),
+                      style: context.textStyles.displaySmall
+                          ?.copyWith(color: cs.primary),
                     ),
                   ],
                 ),

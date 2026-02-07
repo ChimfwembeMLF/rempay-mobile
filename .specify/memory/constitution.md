@@ -1,50 +1,81 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Rempay MVP Constitution (Flutter/Dart)
 
 ## Core Principles
+1. **Clean architecture, strict boundaries**
+	- Presentation (UI/state) depends on Domain (business rules) only.
+	- Data (API/DB/DTO) depends on Domain, never the other way.
+2. **Repository pattern**
+	- Domain defines repository interfaces; Data implements them.
+3. **Typed, validated models**
+	- DTOs are validated on parse; Domain models enforce invariants.
+4. **Predictable state & navigation**
+	- Single state management approach (Provider/ChangeNotifier) and go_router.
+5. **Testability first**
+	- Unit/widget/integration tests are required for meaningful changes.
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+## Architecture & Layer Rules
+### MUST
+- Keep Domain pure: no Flutter imports, no HTTP, no persistence code.
+- Keep Data isolated: only Data touches APIs, DTOs, services in [lib/data](lib/data).
+- Keep UI in Presentation: pages/widgets in [lib/pages](lib/pages) and [lib/widgets](lib/widgets).
+- Define repository interfaces in Domain (e.g., `PaymentRepository`) and implement in Data.
+- Map DTO → Domain model before exposing to UI.
+- Validate DTOs when decoding (null/format checks) and Domain models on construction.
+- Use go_router via [lib/nav.dart](lib/nav.dart) for navigation.
+- Keep error handling consistent: return domain failures or throw typed errors, not strings.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### SHOULD
+- Keep use-cases/business logic in Domain, not in widgets.
+- Use immutable state objects and notify via ChangeNotifier only.
+- Add simple mapping helpers in Data (e.g., `PaymentDto.toDomain()`).
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### MUST NOT
+- Presentation must not call APIs/services directly.
+- Domain must not import Flutter or `dart:io`.
+- DTOs must not leak into UI widgets.
+- Widgets must not contain business rules beyond formatting.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+## State Management & Routing
+- MUST keep all app navigation in `AppRouter` and only use `context.go()`/`context.push()`.
+- MUST keep state objects in Presentation and expose only view models to widgets.
+- SHOULD prefer a single ChangeNotifier per feature over shared global state.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+**Example (layer flow):** UI → `PaymentRepository` (Domain) → `PaymentGatewayService` (Data) → DTO → Domain Model.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Error Handling & Logging
+- MUST convert transport errors into domain-level failures.
+- MUST log with a single logger utility (if added) and avoid `print()` in production.
+- SHOULD include context (feature, action, id) in logs.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+## Testing Standards
+- MUST add **unit tests** for Domain logic and Data mapping/validation.
+- MUST add **widget tests** for key screens in [lib/pages](lib/pages).
+- SHOULD add **integration tests** for end-to-end flows (routing + repository).
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Naming & Code Style
+- MUST follow Dart style: files in lower_snake_case, types in UpperCamelCase, members in lowerCamelCase.
+- MUST keep public APIs documented with `///`.
+- SHOULD keep functions short and single-purpose.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Folder Boundaries (Current)
+- Presentation: [lib/pages](lib/pages), [lib/widgets](lib/widgets)
+- Domain: [lib/domain](lib/domain)
+- Data: [lib/data](lib/data)
+- Shared utilities: [lib/utils](lib/utils), [lib/theme.dart](lib/theme.dart)
+
+If restructuring becomes necessary, choose **one** of these common layouts:
+1. **Layer-first:** `lib/{presentation,domain,data}/...`
+2. **Feature-first:** `lib/features/<feature>/{presentation,domain,data}/...`
+
+## Do not
+- Do not add API calls inside widgets.
+- Do not bypass repository interfaces.
+- Do not pass DTOs into UI.
+- Do not mix multiple state management patterns in a single feature.
+- Do not add routes outside [lib/nav.dart](lib/nav.dart).
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+- This constitution overrides local practices.
+- Any exception MUST be documented with rationale and scope.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-02-06 | **Last Amended**: 2026-02-06

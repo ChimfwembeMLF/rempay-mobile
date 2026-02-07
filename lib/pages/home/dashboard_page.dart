@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:wanderlog/data/payment_gateway_service.dart';
 import 'package:wanderlog/domain/models.dart';
 import 'package:wanderlog/nav.dart';
+import 'package:wanderlog/pages/auth/auth_provider.dart';
 import 'package:wanderlog/theme.dart';
 import 'package:wanderlog/utils/currency_formatter.dart';
 import 'package:wanderlog/widgets/common.dart';
@@ -16,8 +18,7 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final PaymentGatewayService _service = PaymentGatewayService();
-  
+  late PaymentGatewayService _service;
   MerchantAccount? _account;
   List<Transaction> _transactions = [];
   bool _isLoading = true;
@@ -26,6 +27,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    _service = context.read<PaymentGatewayService>();
     _loadData();
   }
 
@@ -35,9 +37,23 @@ class _DashboardPageState extends State<DashboardPage> {
         _isLoading = true;
         _error = null;
       });
+      
+      // Only load data if user is authenticated
+      final authProvider = context.read<AuthProvider>();
+      if (!authProvider.isAuthenticated) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _account = null;
+            _transactions = [];
+          });
+        }
+        return;
+      }
+      
       final account = await _service.getMerchantAccount();
       final transactions = await _service.getTransactions();
-      
+
       if (mounted) {
         setState(() {
           _account = account;
@@ -67,7 +83,10 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               _buildHeader(),
               const SizedBox(height: AppSpacing.lg),
-              if (_isLoading) const SizedBox(height: 220, child: AppLoadingState(label: 'Loading dashboard…')),
+              if (_isLoading)
+                const SizedBox(
+                    height: 220,
+                    child: AppLoadingState(label: 'Loading dashboard…')),
               if (!_isLoading && _error != null)
                 AppEmptyState(
                   title: 'Something went wrong',
@@ -86,7 +105,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 if (_transactions.isEmpty)
                   const AppEmptyState(
                     title: 'No activity yet',
-                    message: 'Once payments or payouts occur, they’ll show up here.',
+                    message:
+                        'Once payments or payouts occur, they’ll show up here.',
                     icon: Icons.timeline_rounded,
                   )
                 else
@@ -128,10 +148,12 @@ class _DashboardPageState extends State<DashboardPage> {
           icon: Container(
             padding: AppSpacing.paddingSm,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.notifications_outlined, color: Theme.of(context).colorScheme.primary),
+            child: Icon(Icons.notifications_outlined,
+                color: Theme.of(context).colorScheme.primary),
           ),
         ),
       ],
@@ -165,14 +187,17 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Text(
                 'Available Balance',
-                style: context.textStyles.bodyMedium?.withColor(Colors.white.withValues(alpha: 0.85)),
+                style: context.textStyles.bodyMedium
+                    ?.withColor(Colors.white.withValues(alpha: 0.85)),
               ),
-              Icon(Icons.account_balance_wallet_outlined, color: Colors.white.withValues(alpha: 0.85)),
+              Icon(Icons.account_balance_wallet_outlined,
+                  color: Colors.white.withValues(alpha: 0.85)),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            CurrencyFormatter.format(_account!.balance.available, _account!.currency),
+            CurrencyFormatter.format(
+                _account!.balance.available, _account!.currency),
             style: context.textStyles.displaySmall?.withColor(Colors.white),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -185,11 +210,13 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.access_time_rounded, size: 16, color: Colors.white),
+                const Icon(Icons.access_time_rounded,
+                    size: 16, color: Colors.white),
                 const SizedBox(width: 8),
                 Text(
                   'Pending: ${CurrencyFormatter.format(_account!.balance.pending, _account!.currency)}',
-                  style: context.textStyles.labelMedium?.withColor(Colors.white),
+                  style:
+                      context.textStyles.labelMedium?.withColor(Colors.white),
                 ),
               ],
             ),
@@ -231,8 +258,13 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildActionButton({required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
-    final bg = Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface;
+  Widget _buildActionButton(
+      {required IconData icon,
+      required String label,
+      required Color color,
+      required VoidCallback onTap}) {
+    final bg = Theme.of(context).cardTheme.color ??
+        Theme.of(context).colorScheme.surface;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),

@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:wanderlog/data/payment_gateway_service.dart';
 import 'package:wanderlog/domain/models.dart';
 import 'package:wanderlog/nav.dart';
+import 'package:wanderlog/pages/auth/auth_provider.dart';
 import 'package:wanderlog/theme.dart';
 import 'package:wanderlog/utils/currency_formatter.dart';
+import 'package:wanderlog/widgets/api_key_settings_dialog.dart';
 import 'package:wanderlog/widgets/common.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -16,8 +19,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final PaymentGatewayService _service = PaymentGatewayService();
-
+  late PaymentGatewayService _service;
   MerchantAccount? _account;
   bool _loading = true;
   String? _error;
@@ -25,6 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    _service = context.read<PaymentGatewayService>();
     _load();
   }
 
@@ -50,6 +53,79 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _showLogoutConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      final authProvider = context.read<AuthProvider>();
+      await authProvider.logout();
+      if (mounted) {
+        context.go(AppRoutes.login);
+      }
+    }
+  }
+
+  Future<void> _showTenantIdDialog(
+    BuildContext context,
+    dynamic api,
+    dynamic storage,
+  ) async {
+    final controller = TextEditingController(text: api.getTenantId() ?? '');
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Tenant ID'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'Enter your tenant ID',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: null,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      await storage.saveTenantId(result);
+      api.setTenantId(result);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tenant ID updated')),
+        );
+        setState(() {});
+      }
+    }
+    controller.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -71,7 +147,10 @@ class _ProfilePageState extends State<ProfilePage> {
           child: ListView(
             padding: AppSpacing.paddingMd,
             children: [
-              if (_loading) const SizedBox(height: 260, child: AppLoadingState(label: 'Loading profile…')),
+              if (_loading)
+                const SizedBox(
+                    height: 260,
+                    child: AppLoadingState(label: 'Loading profile…')),
               if (!_loading && _error != null)
                 AppEmptyState(
                   title: 'Couldn\'t load profile',
@@ -81,7 +160,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   onAction: _load,
                 ),
               if (!_loading && _error == null && _account != null) ...[
-                _ProfileHero(account: _account!, isConfigured: _service.isConfigured),
+                _ProfileHero(
+                    account: _account!, isConfigured: _service.isConfigured),
                 const SizedBox(height: AppSpacing.lg),
                 _QuickLinks(
                   onPayouts: () => context.go(AppRoutes.disbursements),
@@ -102,20 +182,24 @@ class _ProfilePageState extends State<ProfilePage> {
                         onTap: () => showModalBottomSheet<void>(
                           context: context,
                           backgroundColor: Colors.transparent,
-                          builder: (ctx) => _MerchantDetailsSheet(account: _account!, isConfigured: _service.isConfigured),
+                          builder: (ctx) => _MerchantDetailsSheet(
+                              account: _account!,
+                              isConfigured: _service.isConfigured),
                         ),
                       ),
                       _DividerLine(),
                       _SettingTile(
                         icon: Icons.account_balance_wallet_outlined,
                         title: 'Available balance',
-                        subtitle: CurrencyFormatter.format(_account!.balance.available, _account!.currency),
+                        subtitle: CurrencyFormatter.format(
+                            _account!.balance.available, _account!.currency),
                       ),
                       _DividerLine(),
                       _SettingTile(
                         icon: Icons.access_time_rounded,
                         title: 'Pending balance',
-                        subtitle: CurrencyFormatter.format(_account!.balance.pending, _account!.currency),
+                        subtitle: CurrencyFormatter.format(
+                            _account!.balance.pending, _account!.currency),
                       ),
                     ],
                   ),
@@ -130,8 +214,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       _SettingTile(
                         icon: Icons.link_rounded,
                         title: 'Payment gateway',
-                        subtitle: _service.isConfigured ? 'Configured via environment' : 'Using mock fallback',
-                        trailing: Icon(Icons.circle, size: 12, color: _service.isConfigured ? AppColors.success : AppColors.warning),
+                        subtitle: _service.isConfigured
+                            ? 'Configured via environment'
+                            : 'Using mock fallback',
+                        trailing: Icon(Icons.circle,
+                            size: 12,
+                            color: _service.isConfigured
+                                ? AppColors.success
+                                : AppColors.warning),
                         onTap: () => showModalBottomSheet<void>(
                           context: context,
                           backgroundColor: Colors.transparent,
@@ -154,6 +244,82 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.info_outline_rounded,
                         title: 'App version',
                         subtitle: '1.0.0',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Text('Settings', style: context.textStyles.titleLarge),
+                const SizedBox(height: AppSpacing.md),
+                AppSectionCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      Consumer<AuthProvider>(
+                        builder: (context, authProvider, _) {
+                          final authService = authProvider.repository as dynamic;
+                          final api = authService.api;
+                          final storage = authService.storage;
+                          return Column(
+                            children: [
+                              _SettingTile(
+                                icon: Icons.settings_outlined,
+                                title: 'Merchant Configuration',
+                                subtitle: 'Business & payment settings',
+                                trailing: const Icon(Icons.chevron_right_rounded),
+                                onTap: () => context.pushNamed(
+                                  'merchantConfig',
+                                  extra: api,
+                                ),
+                              ),
+                              _DividerLine(),
+                              _SettingTile(
+                                icon: Icons.business_outlined,
+                                title: 'Tenant ID',
+                                subtitle: api.getTenantId() != null
+                                    ? api.getTenantId()
+                                    : 'Not configured',
+                                trailing: Icon(Icons.circle,
+                                    size: 12,
+                                    color: api.getTenantId() != null
+                                        ? AppColors.success
+                                        : AppColors.warning),
+                                onTap: () => _showTenantIdDialog(
+                                  context,
+                                  api,
+                                  storage,
+                                ),
+                              ),
+                              _DividerLine(),
+                              _SettingTile(
+                                icon: Icons.vpn_key_outlined,
+                                title: 'API Key',
+                                subtitle: api.getApiKey() != null
+                                    ? 'Configured'
+                                    : 'Not configured',
+                                trailing: Icon(Icons.circle,
+                                    size: 12,
+                                    color: api.getApiKey() != null
+                                        ? AppColors.success
+                                        : AppColors.warning),
+                                onTap: () => showDialog<void>(
+                                  context: context,
+                                  builder: (ctx) => ApiKeySettingsDialog(
+                                    api: api,
+                                    storage: storage,
+                                  ),
+                                ),
+                              ),
+                              _DividerLine(),
+                              _SettingTile(
+                                icon: Icons.logout_rounded,
+                                title: 'Logout',
+                                subtitle: 'Sign out of your account',
+                                onTap: () => _showLogoutConfirmation(context),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -203,11 +369,16 @@ class _ProfileHero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(account.name, style: context.textStyles.titleLarge?.withColor(Colors.white)),
+                Text(account.name,
+                    style:
+                        context.textStyles.titleLarge?.withColor(Colors.white)),
                 const SizedBox(height: 6),
                 Text(
-                  isConfigured ? 'Live gateway configured' : 'Running on mock data',
-                  style: context.textStyles.bodyMedium?.withColor(Colors.white.withValues(alpha: 0.85)),
+                  isConfigured
+                      ? 'Live gateway configured'
+                      : 'Running on mock data',
+                  style: context.textStyles.bodyMedium
+                      ?.withColor(Colors.white.withValues(alpha: 0.85)),
                 ),
               ],
             ),
@@ -240,16 +411,19 @@ class _QuickLinks extends StatelessWidget {
                     color: AppColors.action.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: const Icon(Icons.payments_rounded, color: AppColors.action),
+                  child: const Icon(Icons.payments_rounded,
+                      color: AppColors.action),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Payouts', style: context.textStyles.titleSmall?.semiBold),
+                      Text('Payouts',
+                          style: context.textStyles.titleSmall?.semiBold),
                       const SizedBox(height: 4),
-                      Text('Create & track disbursements', style: context.textStyles.bodySmall),
+                      Text('Create & track disbursements',
+                          style: context.textStyles.bodySmall),
                     ],
                   ),
                 ),
@@ -271,16 +445,19 @@ class _QuickLinks extends StatelessWidget {
                     color: AppColors.info.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: const Icon(Icons.notifications_rounded, color: AppColors.info),
+                  child: const Icon(Icons.notifications_rounded,
+                      color: AppColors.info),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Alerts', style: context.textStyles.titleSmall?.semiBold),
+                      Text('Alerts',
+                          style: context.textStyles.titleSmall?.semiBold),
                       const SizedBox(height: 4),
-                      Text('Risk, payout, system signals', style: context.textStyles.bodySmall),
+                      Text('Risk, payout, system signals',
+                          style: context.textStyles.bodySmall),
                     ],
                   ),
                 ),
@@ -335,12 +512,16 @@ class _SettingTile extends StatelessWidget {
 class _DividerLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Divider(height: 1, thickness: 1, color: Theme.of(context).dividerTheme.color?.withValues(alpha: 0.6));
+    return Divider(
+        height: 1,
+        thickness: 1,
+        color: Theme.of(context).dividerTheme.color?.withValues(alpha: 0.6));
   }
 }
 
 class _MerchantDetailsSheet extends StatelessWidget {
-  const _MerchantDetailsSheet({required this.account, required this.isConfigured});
+  const _MerchantDetailsSheet(
+      {required this.account, required this.isConfigured});
 
   final MerchantAccount account;
   final bool isConfigured;
@@ -352,7 +533,9 @@ class _MerchantDetailsSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(AppRadius.xl), topRight: Radius.circular(AppRadius.xl)),
+        borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(AppRadius.xl),
+            topRight: Radius.circular(AppRadius.xl)),
       ),
       child: SafeArea(
         top: false,
@@ -364,9 +547,12 @@ class _MerchantDetailsSheet extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text('Merchant details', style: context.textStyles.headlineSmall),
+                  Text('Merchant details',
+                      style: context.textStyles.headlineSmall),
                   const Spacer(),
-                  IconButton(onPressed: () => context.pop(), icon: Icon(Icons.close_rounded, color: cs.onSurface)),
+                  IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(Icons.close_rounded, color: cs.onSurface)),
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -377,11 +563,15 @@ class _MerchantDetailsSheet extends StatelessWidget {
                   children: [
                     Text(account.name, style: context.textStyles.titleLarge),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('Merchant ID: ${account.id}', style: context.textStyles.bodyMedium),
+                    Text('Merchant ID: ${account.id}',
+                        style: context.textStyles.bodyMedium),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('Currency: ${account.currency}', style: context.textStyles.bodyMedium),
+                    Text('Currency: ${account.currency}',
+                        style: context.textStyles.bodyMedium),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('Gateway: ${isConfigured ? 'Configured' : 'Mock fallback'}', style: context.textStyles.bodyMedium),
+                    Text(
+                        'Gateway: ${isConfigured ? 'Configured' : 'Mock fallback'}',
+                        style: context.textStyles.bodyMedium),
                   ],
                 ),
               ),
@@ -404,7 +594,9 @@ class _GatewayInfoSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(AppRadius.xl), topRight: Radius.circular(AppRadius.xl)),
+        borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(AppRadius.xl),
+            topRight: Radius.circular(AppRadius.xl)),
       ),
       child: SafeArea(
         top: false,
@@ -416,9 +608,12 @@ class _GatewayInfoSheet extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text('Payment gateway', style: context.textStyles.headlineSmall),
+                  Text('Payment gateway',
+                      style: context.textStyles.headlineSmall),
                   const Spacer(),
-                  IconButton(onPressed: () => context.pop(), icon: Icon(Icons.close_rounded, color: cs.onSurface)),
+                  IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(Icons.close_rounded, color: cs.onSurface)),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
@@ -432,11 +627,15 @@ class _GatewayInfoSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Used variables', style: context.textStyles.titleSmall?.semiBold),
+                    Text('Used variables',
+                        style: context.textStyles.titleSmall?.semiBold),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('PAYMENT_GATEWAY_BASE_URL', style: context.textStyles.bodyMedium),
-                    Text('PAYMENT_GATEWAY_TENANT_ID', style: context.textStyles.bodyMedium),
-                    Text('PAYMENT_GATEWAY_API_KEY', style: context.textStyles.bodyMedium),
+                    Text('PAYMENT_GATEWAY_BASE_URL',
+                        style: context.textStyles.bodyMedium),
+                    Text('PAYMENT_GATEWAY_TENANT_ID',
+                        style: context.textStyles.bodyMedium),
+                    Text('PAYMENT_GATEWAY_API_KEY',
+                        style: context.textStyles.bodyMedium),
                   ],
                 ),
               ),
@@ -459,7 +658,9 @@ class _BackendInfoSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(AppRadius.xl), topRight: Radius.circular(AppRadius.xl)),
+        borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(AppRadius.xl),
+            topRight: Radius.circular(AppRadius.xl)),
       ),
       child: SafeArea(
         top: false,
@@ -471,9 +672,12 @@ class _BackendInfoSheet extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text('Backend connection', style: context.textStyles.headlineSmall),
+                  Text('Backend connection',
+                      style: context.textStyles.headlineSmall),
                   const Spacer(),
-                  IconButton(onPressed: () => context.pop(), icon: Icon(Icons.close_rounded, color: cs.onSurface)),
+                  IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(Icons.close_rounded, color: cs.onSurface)),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
@@ -487,12 +691,17 @@ class _BackendInfoSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dreamflow steps', style: context.textStyles.titleSmall?.semiBold),
+                    Text('Dreamflow steps',
+                        style: context.textStyles.titleSmall?.semiBold),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('1) Open Firebase or Supabase panel', style: context.textStyles.bodyMedium),
-                    Text('2) Sign in and select a project', style: context.textStyles.bodyMedium),
-                    Text('3) Complete Project Setup', style: context.textStyles.bodyMedium),
-                    Text('4) Ask me to add auth / database screens', style: context.textStyles.bodyMedium),
+                    Text('1) Open Firebase or Supabase panel',
+                        style: context.textStyles.bodyMedium),
+                    Text('2) Sign in and select a project',
+                        style: context.textStyles.bodyMedium),
+                    Text('3) Complete Project Setup',
+                        style: context.textStyles.bodyMedium),
+                    Text('4) Ask me to add auth / database screens',
+                        style: context.textStyles.bodyMedium),
                   ],
                 ),
               ),

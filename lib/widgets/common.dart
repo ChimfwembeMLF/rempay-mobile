@@ -61,15 +61,20 @@ class AppEmptyState extends StatelessWidget {
               child: Icon(icon, color: cs.primary),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text(title, style: context.textStyles.titleLarge, textAlign: TextAlign.center),
+            Text(title,
+                style: context.textStyles.titleLarge,
+                textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.sm),
-            Text(message, style: context.textStyles.bodyMedium, textAlign: TextAlign.center),
+            Text(message,
+                style: context.textStyles.bodyMedium,
+                textAlign: TextAlign.center),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.lg),
               ElevatedButton.icon(
                 onPressed: onAction,
                 icon: const Icon(Icons.add_rounded, color: Colors.white),
-                label: Text(actionLabel!, style: const TextStyle(color: Colors.white)),
+                label: Text(actionLabel!,
+                    style: const TextStyle(color: Colors.white)),
               ),
             ],
           ],
@@ -80,14 +85,16 @@ class AppEmptyState extends StatelessWidget {
 }
 
 class AppSectionCard extends StatelessWidget {
-  const AppSectionCard({super.key, required this.child, this.padding, this.onTap});
+  const AppSectionCard(
+      {super.key, required this.child, this.padding, this.onTap});
   final Widget child;
   final EdgeInsets? padding;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = Theme.of(context).dividerTheme.color?.withValues(alpha: 0.55);
+    final borderColor =
+        Theme.of(context).dividerTheme.color?.withValues(alpha: 0.55);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -125,7 +132,8 @@ class SeverityPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: context.textStyles.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w700),
+        style: context.textStyles.labelSmall
+            ?.copyWith(color: color, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -156,14 +164,19 @@ class TransactionListItem extends StatelessWidget {
       icon = Icons.undo_rounded;
     } else {
       iconColor = AppColors.success;
-      icon = isPositive ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
+      icon = isPositive
+          ? Icons.arrow_downward_rounded
+          : Icons.arrow_upward_rounded;
     }
 
-    final subtitle = '${DateFormat('MMM d, h:mm a').format(tx.timestamp)} • ${tx.reference}';
+    final subtitle =
+        '${DateFormat('MMM d, h:mm a').format(tx.timestamp)} • ${tx.reference}';
 
     final amountColor = isFailed
         ? AppColors.error
-        : (isPositive ? AppColors.success : Theme.of(context).colorScheme.onSurface);
+        : (isPositive
+            ? AppColors.success
+            : Theme.of(context).colorScheme.onSurface);
 
     return AppSectionCard(
       onTap: onTap,
@@ -182,7 +195,8 @@ class TransactionListItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tx.counterparty, style: context.textStyles.titleSmall?.semiBold),
+                Text(tx.counterparty,
+                    style: context.textStyles.titleSmall?.semiBold),
                 const SizedBox(height: 4),
                 Text(subtitle, style: context.textStyles.bodySmall),
               ],
@@ -194,7 +208,8 @@ class TransactionListItem extends StatelessWidget {
             children: [
               Text(
                 '${isPositive ? '+' : ''}${CurrencyFormatter.format(tx.amount, tx.currency)}',
-                style: context.textStyles.titleSmall?.semiBold.copyWith(color: amountColor),
+                style: context.textStyles.titleSmall?.semiBold
+                    .copyWith(color: amountColor),
               ),
               const SizedBox(height: 4),
               _TransactionStatusPill(status: tx.status),
@@ -226,7 +241,9 @@ class _TransactionStatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
-      child: Text(label, style: context.textStyles.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w700)),
+      child: Text(label,
+          style: context.textStyles.labelSmall
+              ?.copyWith(color: color, fontWeight: FontWeight.w700)),
     );
   }
 }

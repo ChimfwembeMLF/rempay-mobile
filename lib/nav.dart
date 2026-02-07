@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wanderlog/pages/alerts/alerts_page.dart';
+import 'package:wanderlog/pages/auth/login_page.dart';
+import 'package:wanderlog/pages/auth/register_page.dart';
 import 'package:wanderlog/pages/disbursements/disbursements_page.dart';
 import 'package:wanderlog/pages/home/dashboard_page.dart';
 import 'package:wanderlog/pages/profile/profile_page.dart';
+import 'package:wanderlog/pages/settings/merchant_config_page.dart';
 import 'package:wanderlog/theme.dart';
 
 /// GoRouter configuration for app navigation
@@ -16,8 +19,25 @@ class AppRouter {
 
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.login,
     routes: [
+      // Authentication routes (outside main navigation)
+      GoRoute(
+        path: AppRoutes.login,
+        name: 'login',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: LoginPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.register,
+        name: 'register',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: RegisterPage(),
+        ),
+      ),
+
+      // Main app routes with bottom navigation
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return ScaffoldWithNavBar(navigationShell: navigationShell);
@@ -64,6 +84,17 @@ class AppRouter {
                 pageBuilder: (context, state) => const NoTransitionPage(
                   child: ProfilePage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: AppRoutes.merchantConfig,
+                    name: 'merchantConfig',
+                    pageBuilder: (context, state) => NoTransitionPage(
+                      child: MerchantConfigPage(
+                        api: state.extra as dynamic,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -74,10 +105,13 @@ class AppRouter {
 }
 
 class AppRoutes {
+  static const String login = '/login';
+  static const String register = '/register';
   static const String home = '/';
   static const String disbursements = '/disbursements';
   static const String alerts = '/alerts';
   static const String profile = '/profile';
+  static const String merchantConfig = 'config';
 }
 
 class ScaffoldWithNavBar extends StatelessWidget {
@@ -111,22 +145,26 @@ class ScaffoldWithNavBar extends StatelessWidget {
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.primary),
+              selectedIcon:
+                  Icon(Icons.dashboard_rounded, color: AppColors.primary),
               label: 'Home',
             ),
             NavigationDestination(
               icon: Icon(Icons.payments_outlined),
-              selectedIcon: Icon(Icons.payments_rounded, color: AppColors.primary),
+              selectedIcon:
+                  Icon(Icons.payments_rounded, color: AppColors.primary),
               label: 'Payouts',
             ),
             NavigationDestination(
               icon: Icon(Icons.notifications_outlined),
-              selectedIcon: Icon(Icons.notifications_rounded, color: AppColors.primary),
+              selectedIcon:
+                  Icon(Icons.notifications_rounded, color: AppColors.primary),
               label: 'Alerts',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
+              selectedIcon:
+                  Icon(Icons.person_rounded, color: AppColors.primary),
               label: 'Profile',
             ),
           ],

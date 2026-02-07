@@ -117,9 +117,14 @@ class MockService {
     return List.unmodifiable(_alerts);
   }
 
-  Future<Transaction> createPayout({required double amount, required String currency, required String destinationLabel, String? note}) async {
+  Future<Transaction> createPayout(
+      {required double amount,
+      required String currency,
+      required String destinationLabel,
+      String? note}) async {
     await Future.delayed(const Duration(milliseconds: 700));
-    if (amount <= 0) throw ArgumentError.value(amount, 'amount', 'Amount must be > 0');
+    if (amount <= 0)
+      throw ArgumentError.value(amount, 'amount', 'Amount must be > 0');
 
     // In a real system, payouts reduce available balance and may become pending.
     final id = 'po_${1000 + Random().nextInt(8999)}';
@@ -136,12 +141,16 @@ class MockService {
 
     _transactions.insert(0, tx);
 
-    final nextAvailable = (_currentAccount.balance.available - amount).clamp(0, double.infinity).toDouble();
+    final nextAvailable = (_currentAccount.balance.available - amount)
+        .clamp(0, double.infinity)
+        .toDouble();
     _currentAccount = MerchantAccount(
       id: _currentAccount.id,
       name: _currentAccount.name,
       currency: _currentAccount.currency,
-      balance: Balance(available: nextAvailable, pending: _currentAccount.balance.pending + amount),
+      balance: Balance(
+          available: nextAvailable,
+          pending: _currentAccount.balance.pending + amount),
     );
 
     _alerts.insert(
@@ -149,7 +158,8 @@ class MockService {
       Alert(
         id: 'alt_${100 + Random().nextInt(899)}',
         title: 'Payout initiated',
-        message: '${note?.trim().isNotEmpty == true ? '${note!.trim()} • ' : ''}Destination: $destinationLabel',
+        message:
+            '${note?.trim().isNotEmpty == true ? '${note!.trim()} • ' : ''}Destination: $destinationLabel',
         severity: AlertSeverity.low,
         timestamp: DateTime.now(),
         isRead: false,
@@ -204,6 +214,7 @@ class MockService {
   }
 
   void debugDump() {
-    debugPrint('MockService: tx=${_transactions.length} alerts=${_alerts.length}');
+    debugPrint(
+        'MockService: tx=${_transactions.length} alerts=${_alerts.length}');
   }
 }
